@@ -1,0 +1,57 @@
+service: workflow-engine
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+
+functions:
+  graphql:
+    handler: src/infrastructure/adapters/lambda/graphqlHandler.handler
+    events:
+      - http:
+          path: graphql
+          method: post
+          cors: true
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+  dynamodb:
+    stages:
+      - dev
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+
+resources:
+  Resources:
+    WorkflowsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Workflows
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+    WorkflowTemplatesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: WorkflowTemplates
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-dynamodb-local
+  - serverless-offline
